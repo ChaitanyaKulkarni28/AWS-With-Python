@@ -1,0 +1,34 @@
+
+import boto3
+from pathlib import Path
+
+s3 = boto3.resource('s3')
+rekognition = boto3.client('rekognition')
+
+#Get region of current user
+my_session = boto3.session.Session()
+my_region = my_session.region_name
+
+bucket = s3.create_bucket(Bucket='VideoAnalyzer',CreateBucketConfiguration={'LocationConstraint':my_region})
+
+path_name = 'C:/Users/UserName/Downloads/video.mp4'
+path = Path(path_name).expanduser().resolve()
+
+bucket.upload_file(str(path),str(path.name))
+
+#This call wont give you information it just starts task in background.
+#If you print response you will see job id it will help us get the actual result in next call
+response = rekognition.start_label_detection(
+    Video={
+        'S3Object': {
+            'Bucket': bucket.name,
+            'Name': path.name
+        }
+    })
+	
+
+jobId = response['JobId']
+
+result = rekognition.get_label_detection(JobId = jobId)
+
+print(result)
